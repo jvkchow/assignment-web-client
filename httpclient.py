@@ -41,13 +41,20 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+
+        header = self.get_headers(data)
+        header_components = header.split("\r\n")
+        code = header_components[0].split()
+        print(code[1])
+        return int(code[1])
 
     def get_headers(self,data):
-        return None
+        whole = data.split("\r\n\r\n")
+        return whole[0]
 
     def get_body(self, data):
-        return None
+        whole = data.split("\r\n\r\n")
+        return whole[1]
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -68,12 +75,40 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
+
         code = 500
         body = ""
+
+        components = urllib.parse.urlparse(url)
+        host = components.hostname
+        port = components.port
+        scheme = components.scheme
+        path = components.path
+
+        if scheme == "http" and port == None:
+            port = 80
+        elif scheme == "https" and port == None:
+            port = 443
+        
+        if path == "":
+            request = "GET / HTTP/1.1\nHost: " + host + "\r\nConnection: close\r\n\r\n"
+        else:
+            request = "GET " + path + " HTTP/1.1\nHost: " + host + "\r\nConnection: close\r\n\r\n"
+
+        self.connect(host, port)
+        self.socket.sendall(bytearray(request, 'utf-8'))
+        response = self.recvall(self.socket)
+        
+        code = self.get_code(response)
+        body = self.get_body(response)
+
+        self.socket.close()
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
+        print("post", url)
         body = ""
         return HTTPResponse(code, body)
 
