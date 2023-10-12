@@ -18,3 +18,8 @@ examples thus some of the code is Copyright © 2001-2013 Python
 Software Foundation; All Rights Reserved under the PSF license (GPL
 compatible) http://docs.python.org/2/library/socketserver.html
 
+========================
+Resources Used:
+https://www.linode.com/docs/guides/http-get-request/
+https://docs.python.org/3/library/urllib.parse.html
+https://www.internalpointers.com/post/making-http-requests-sockets-python

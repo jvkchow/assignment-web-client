@@ -41,20 +41,19 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-
+        # break down the header until just the response code number is left
         header = self.get_headers(data)
         header_components = header.split("\r\n")
         code = header_components[0].split()
-        print(code[1])
         return int(code[1])
 
     def get_headers(self,data):
-        whole = data.split("\r\n\r\n")
-        return whole[0]
+        whole = data.split("\r\n\r\n") # split between the header and the body
+        return whole[0] # return the first part (the header)
 
     def get_body(self, data):
-        whole = data.split("\r\n\r\n")
-        return whole[1]
+        whole = data.split("\r\n\r\n") # split between the header and the body
+        return whole[1] # return the second part (the body)
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -79,26 +78,31 @@ class HTTPClient(object):
         code = 500
         body = ""
 
+        # get the necessary components from the url
         components = urllib.parse.urlparse(url)
         host = components.hostname
         port = components.port
         scheme = components.scheme
         path = components.path
 
+        # get the proper port number if none was found
         if scheme == "http" and port == None:
             port = 80
         elif scheme == "https" and port == None:
             port = 443
         
+        # create the string for sending the GET request (and change the path to / if a path was not given)
         if path == "":
-            request = "GET / HTTP/1.1\nHost: " + host + "\r\nConnection: close\r\n\r\n"
+            request = "GET / HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n"
         else:
-            request = "GET " + path + " HTTP/1.1\nHost: " + host + "\r\nConnection: close\r\n\r\n"
+            request = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n"
 
+        # send the request and retrieve the response
         self.connect(host, port)
         self.socket.sendall(bytearray(request, 'utf-8'))
         response = self.recvall(self.socket)
         
+        # get the code and body to return back to the caller
         code = self.get_code(response)
         body = self.get_body(response)
 
@@ -108,15 +112,48 @@ class HTTPClient(object):
 
     def POST(self, url, args=None):
         code = 500
-        print("post", url)
         body = ""
-        return HTTPResponse(code, body)
 
-    def command(self, url, command="GET", args=None):
-        if (command == "POST"):
-            return self.POST( url, args )
+        # get the necessary components from the url
+        components = urllib.parse.urlparse(url)
+        host = components.hostname
+        port = components.port
+        scheme = components.scheme
+        path = components.path
+
+        # get the proper port number if none was found
+        if scheme == "http" and port == None:
+            port = 80
+        elif scheme == "https" and port == None:
+            port = 443
+
+        # get the content of the argument if there is any
+        content = ""
+        if args != None:
+            for key, value in args.items():
+                content += f'{key}={value}&'
+            content_length = len(content)
         else:
-            return self.GET( url, args )
+            content_length = 0
+
+        # create the string for sending the POST request (and change the path to / if a path was not given)
+        if path == "":
+            request = "POST / HTTP/1.1\r\nHost: " + host + "\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: " + str(content_length) + "\r\nConnection: Closed\r\n\r\n" + content
+        else:
+            request = "POST " + path + " HTTP/1.1\r\nHost: " + host + "\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: " + str(content_length) + "\r\nConnection: Closed\r\n\r\n" + content
+
+        # send the request and retrieve the response
+        self.connect(host, port)
+        self.socket.sendall(bytearray(request, 'utf-8'))
+        response = self.recvall(self.socket)
+        
+        # get the code and body to return back to the caller
+        code = self.get_code(response)
+        body = self.get_body(response)
+
+        self.socket.close()
+
+        return HTTPResponse(code, body)
     
 if __name__ == "__main__":
     client = HTTPClient()
